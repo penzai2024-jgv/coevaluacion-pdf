@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coevaluación Audition · SENA</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg:        #0D0F14;
+  --bg2:       #13161E;
+  --bg3:       #1A1E2A;
+  --card:      #1E2230;
+  --border:    #2A2F42;
+  --accent:    #00E5CC;
+  --accent2:   #FF6B6B;
+  --accent3:   #FFD93D;
+  --text:      #E8EAF0;
+  --muted:     #6B7394;
+  --green:     #00C896;
+  --red:       #FF4757;
+  --r:         12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── WAVEFORM BG ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 80% 40% at 10% 20%,rgba(0,229,204,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 80%,rgba(255,107,107,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── HEADER ── */
+.hdr{
+  background:rgba(13,15,20,.9);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.hdr-inner{max-width:860px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:14px;}
+.hdr-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:2px;
+  background:var(--accent);color:var(--bg);
+  padding:4px 10px;border-radius:4px;font-weight:600;
+  white-space:nowrap;
+}
+.hdr-title{flex:1;}
+.hdr-title h1{font-size:15px;font-weight:700;color:var(--text);}
+.hdr-title p{font-size:11px;color:var(--muted);margin-top:1px;}
+.step-pip{display:flex;gap:6px;}
+.pip{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.3s;}
+.pip.on{background:var(--accent);}
+.pip.done{background:var(--accent);opacity:.4;}
+
+/* ── MAIN ── */
+.main{max-width:860px;margin:0 auto;padding:28px 16px 72px;position:relative;z-index:1;}
+
+/* ── PROGRESS ── */
+.prog-wrap{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:32px;}
+.prog-step{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:default;}
+.prog-circle{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;
+  background:var(--bg3);color:var(--muted);
+  border:2px solid var(--border);transition:.3s;
+}
+.prog-step.on .prog-circle{background:var(--accent);color:var(--bg);border-color:var(--accent);box-shadow:0 0 16px rgba(0,229,204,.35);}
+.prog-step.done .prog-circle{background:var(--bg3);color:var(--accent);border-color:var(--accent);}
+.prog-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px;white-space:nowrap;}
+.prog-step.on .prog-label{color:var(--accent);}
+.prog-line{flex:1;height:2px;background:var(--border);margin:0 6px;margin-bottom:18px;min-width:24px;transition:.3s;}
+.prog-line.done{background:var(--accent);}
+
+/* ── STEPS ── */
+.step{display:none;animation:fadeUp .35s ease;}
+.step.on{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:16px;}
+.card-tag{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--accent);font-weight:600;
+  text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;
+}
+.card-tag::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;}
+
+/* ── FORM ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fg{margin-bottom:16px;}
+label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase;}
+input[type=text],textarea,select{
+  width:100%;padding:11px 14px;
+  background:var(--bg3);border:1.5px solid var(--border);
+  border-radius:8px;font-family:'Space Grotesk',sans-serif;
+  font-size:13px;color:var(--text);outline:none;transition:.2s;
+}
+input[type=text]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,204,.1);background:var(--bg2);}
+textarea{min-height:80px;resize:vertical;}
+
+/* ── PHOTO ── */
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.photo-card{
+  background:var(--bg3);border:1.5px dashed var(--border);
+  border-radius:var(--r);padding:18px;text-align:center;transition:.2s;
+}
+.photo-card.has{border-style:solid;border-color:var(--accent);}
+.photo-card h3{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;}
+.photo-card img{width:100%;max-height:180px;object-fit:cover;border-radius:8px;display:none;margin-bottom:8px;}
+.photo-card img.show{display:block;}
+.stamp{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent);background:rgba(0,229,204,.08);padding:3px 8px;border-radius:4px;display:none;}
+.stamp.show{display:inline-block;}
+
+/* ── MODAL CAMERA ── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;}
+.modal.open{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;width:90%;max-width:440px;text-align:center;}
+.modal-box h2{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;}
+#camVideo{width:100%;border-radius:10px;background:#000;}
+.modal-btns{margin-top:14px;display:flex;gap:10px;justify-content:center;}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:11px 20px;border:none;border-radius:8px;
+  font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:.2s;letter-spacing:.2px;
+}
+.btn-p{background:var(--accent);color:var(--bg);box-shadow:0 4px 14px rgba(0,229,204,.25);}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,229,204,.35);}
+.btn-s{background:var(--bg3);color:var(--text);border:1.5px solid var(--border);}
+.btn-s:hover{border-color:var(--accent);color:var(--accent);}
+.btn-o{background:transparent;color:var(--accent);border:1.5px solid var(--accent);}
+.btn-o:hover{background:rgba(0,229,204,.08);}
+.btn-lg{padding:14px 28px;font-size:14px;border-radius:10px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:10px;}
+
+/* ── CHECKLIST TABLE ── */
+.tbl-wrap{overflow-x:auto;}
+table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+.ck thead th{
+  background:rgba(0,229,204,.12);color:var(--accent);
+  padding:11px 12px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  text-align:left;
+}
+.ck thead th:first-child{border-radius:8px 0 0 0;}
+.ck thead th:last-child{border-radius:0 8px 0 0;}
+.ck tbody tr{transition:.15s;}
+.ck tbody tr:hover{background:rgba(0,229,204,.04);}
+.ck td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.max-b{
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+  background:rgba(0,229,204,.1);color:var(--accent);
+  padding:3px 8px;border-radius:5px;
+}
+.score-in{
+  width:64px;padding:7px 8px;
+  background:var(--bg3);border:1.5px solid var(--border);
+  border-radius:7px;font-family:'JetBrains Mono',monospace;
+  font-size:14px;font-weight:600;text-align:center;color:var(--text);outline:none;transition:.2s;
+}
+.score-in:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,204,.1);}
+.bar-w{width:80px;background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;display:inline-block;}
+.bar{height:6px;border-radius:4px;background:var(--accent);transition:width .3s;}
+.bar-pct{font-size:10px;color:var(--muted);margin-left:5px;font-family:'JetBrains Mono',monospace;}
+.obs-in{
+  width:100%;padding:5px 8px;font-size:11px;font-family:'Space Grotesk',sans-serif;
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);
+}
+.tfoot-row td{
+  background:rgba(0,229,204,.12)!important;color:var(--accent)!important;
+  font-weight:700!important;font-family:'JetBrains Mono',monospace;font-size:14px!important;
+  border-radius:0!important;
+}
+
+/* ── RESULT ── */
+.res-box{margin-top:20px;padding:22px;border-radius:var(--r);text-align:center;display:none;}
+.res-box.cumple{background:rgba(0,200,150,.08);border:1.5px solid var(--green);}
+.res-box.nocumple{background:rgba(255,71,87,.08);border:1.5px solid var(--red);}
+.res-verdict{font-size:22px;font-weight:800;letter-spacing:2px;}
+.res-box.cumple .res-verdict{color:var(--green);}
+.res-box.nocumple .res-verdict{color:var(--red);}
+.res-score{font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:700;margin:6px 0;}
+.res-box.cumple .res-score{color:var(--green);}
+.res-box.nocumple .res-score{color:var(--red);}
+.res-pct{font-size:13px;color:var(--muted);}
+.res-note{margin-top:10px;font-size:11px;padding:8px 14px;border-radius:7px;background:rgba(255,255,255,.04);}
+
+/* ── SUMMARY ── */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+.sum-item{background:var(--bg3);border-radius:8px;padding:12px 16px;}
+.sum-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
+.sum-val{font-size:13px;font-weight:700;}
+.sum-photos{display:flex;gap:14px;margin-bottom:18px;}
+.sum-photo{flex:1;text-align:center;}
+.sum-photo img{width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border);}
+.sum-photo p{font-size:10px;color:var(--muted);margin-top:5px;}
+
+.juicio{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 22px;border-radius:var(--r);margin-bottom:18px;
+}
+.juicio.cumple{background:rgba(0,200,150,.08);border:1.5px solid var(--green);}
+.juicio.nocumple{background:rgba(255,71,87,.08);border:1.5px solid var(--red);}
+.juicio-ico{font-size:36px;}
+.juicio-txt h3{font-size:18px;font-weight:800;}
+.juicio.cumple .juicio-txt h3{color:var(--green);}
+.juicio.nocumple .juicio-txt h3{color:var(--red);}
+.juicio-txt p{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(0,229,204,.1);color:var(--accent);}
+
+@media(max-width:580px){
+  .g2,.photos,.sum-grid,.sum-photos{grid-template-columns:1fr;flex-direction:column;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-badge">SENA</div>
+    <div class="hdr-title">
+      <h1>Coevaluación · Adobe Audition</h1>
+      <p>Ficha 3172276 · Post-producción Multimedia · 2026</p>
+    </div>
+    <div class="step-pip">
+      <div class="pip on" id="pip0"></div>
+      <div class="pip" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+      <div class="pip" id="pip3"></div>
+    </div>
+  </div>
+</header>
+
+<!-- CAMERA MODAL -->
+<div class="modal" id="camModal">
+  <div class="modal-box">
+    <h2 id="camTitle">📷 Capturar foto</h2>
+    <video id="camVideo" autoplay playsinline></video>
+    <canvas id="camCanvas" style="display:none;"></canvas>
+    <div class="modal-btns">
+      <button class="btn btn-p" onclick="snapPhoto()">📸 Capturar</button>
+      <button class="btn btn-s" onclick="closeCam()">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap">
+    <div class="prog-step on" id="ps0"><div class="prog-circle">1</div><div class="prog-label">Datos</div></div>
+    <div class="prog-line" id="pl0"></div>
+    <div class="prog-step" id="ps1"><div class="prog-circle">2</div><div class="prog-label">Fotos</div></div>
+    <div class="prog-line" id="pl1"></div>
+    <div class="prog-step" id="ps2"><div class="prog-circle">3</div><div class="prog-label">Criterios</div></div>
+    <div class="prog-line" id="pl2"></div>
+    <div class="prog-step" id="ps3"><div class="prog-circle">4</div><div class="prog-label">Resultado</div></div>
+  </div>
+
+  <!-- ══ STEP 1 ══ -->
+  <div class="step on" id="step0">
+    <div class="card">
+      <div class="card-tag">Datos del proceso</div>
+      <div class="g2">
+        <div class="fg"><label>Nombre del Coevaluador</label><input type="text" id="nomEval" placeholder="Tu nombre completo"></div>
+        <div class="fg"><label>Documento del Coevaluador</label><input type="text" id="docEval" placeholder="N° documento"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>Nombre del Aprendiz Evaluado</label><input type="text" id="nomEvad" placeholder="Nombre del compañero"></div>
+        <div class="fg"><label>Documento del Evaluado</label><input type="text" id="docEvad" placeholder="N° documento"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>Instructor</label><input type="text" id="instructor" value="Juan Viveros"></div>
+        <div class="fg"><label>Fecha</label><input type="text" id="fechaField" readonly></div>
+      </div>
+      <div class="fg"><label>Ficha / Programa</label><input type="text" id="ficha" value="3172276 – Tecnólogo de Producción en Multimedia"></div>
+    </div>
+    <div class="nav"><div></div>
+      <button class="btn btn-p btn-lg" onclick="go(1)">Siguiente: Fotografías →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2 ══ -->
+  <div class="step" id="step1">
+    <div class="card">
+      <div class="card-tag">Evidencia fotográfica</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">La foto queda sellada con nombre, fecha y hora exacta. Evidencia del proceso de coevaluación.</p>
+      <div class="photos">
+        <div class="photo-card" id="boxEval">
+          <h3>👤 Coevaluador</h3>
+          <div id="nameTagEval" style="font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
+          <img id="prevEval" src="" alt="">
+          <div id="stampEval" class="stamp"></div><br>
+          <button class="btn btn-o" style="margin-top:10px;font-size:12px;" onclick="openCam('eval')">📷 Tomar foto</button><br>
+          <label style="margin-top:8px;display:block;font-size:10px;color:var(--muted);">o subir imagen<br>
+            <input type="file" accept="image/*" style="font-size:10px;margin-top:4px;" onchange="fromFile(event,'eval')">
+          </label>
+        </div>
+        <div class="photo-card" id="boxEvad">
+          <h3>🎓 Aprendiz evaluado</h3>
+          <div id="nameTagEvad" style="font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
+          <img id="prevEvad" src="" alt="">
+          <div id="stampEvad" class="stamp"></div><br>
+          <button class="btn btn-o" style="margin-top:10px;font-size:12px;" onclick="openCam('evad')">📷 Tomar foto</button><br>
+          <label style="margin-top:8px;display:block;font-size:10px;color:var(--muted);">o subir imagen<br>
+            <input type="file" accept="image/*" style="font-size:10px;margin-top:4px;" onchange="fromFile(event,'evad')">
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-s" onclick="go(0)">← Anterior</button>
+      <button class="btn btn-p btn-lg" onclick="go(2)">Siguiente: Criterios →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3 ══ -->
+  <div class="step" id="step2">
+    <div class="card">
+      <div class="card-tag">Lista de Chequeo · Audio</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;"><b style="color:var(--text)">Competencia:</b> Realizar la post-producción para generar la animación final.</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;"><b style="color:var(--text)">Actividad:</b> Agregar efectos de sonido al desarrollo de la Multimedia.</div>
+      <div class="tbl-wrap">
+        <table class="ck">
+          <thead><tr>
+            <th style="width:44%">Criterio de Evaluación</th>
+            <th style="width:9%;text-align:center">Máx.</th>
+            <th style="width:12%;text-align:center">Logrado</th>
+            <th style="width:18%">Progreso</th>
+            <th style="width:17%">Observación</th>
+          </tr></thead>
+          <tbody id="ckBody"></tbody>
+          <tfoot><tr class="tfoot-row">
+            <td>TOTAL</td>
+            <td id="tMax" style="text-align:center">100</td>
+            <td id="tLog" style="text-align:center">0</td>
+            <td colspan="2" id="tPct" style="text-align:center"></td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <div id="resBox" class="res-box"></div>
+      <div class="fg" style="margin-top:20px;"><label>Observaciones Generales</label><textarea id="obsGen" placeholder="Comentarios sobre el proceso de coevaluación..."></textarea></div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-s" onclick="go(1)">← Anterior</button>
+      <button class="btn btn-p btn-lg" onclick="go(3)">Ver Resultado →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4 ══ -->
+  <div class="step" id="step3">
+    <div class="card">
+      <div class="card-tag">Resultado Final</div>
+      <div style="text-align:center;margin-bottom:18px;padding:14px;background:var(--bg3);border-radius:8px;">
+        <div style="font-weight:800;font-size:13px;color:var(--accent);">SERVICIO NACIONAL DE APRENDIZAJE – SENA</div>
+        <div style="font-size:11px;color:var(--muted);">SENA Regional Tolima · Centro de Industria y Construcción</div>
+        <div style="font-size:11px;color:var(--muted);">Lista de Chequeo Para Evaluar Evidencias de Producto</div>
+      </div>
+      <div class="sum-grid" id="sumGrid"></div>
+      <div class="sum-photos" id="sumPhotos"></div>
+      <div id="juicioBox"></div>
+      <div class="tbl-wrap" style="margin-bottom:18px;">
+        <table class="ck"><thead><tr>
+          <th style="width:55%">Criterio</th>
+          <th style="width:15%;text-align:center">Máx.</th>
+          <th style="width:15%;text-align:center">Logrado</th>
+          <th style="width:15%;text-align:center">%</th>
+        </tr></thead>
+        <tbody id="sumBody"></tbody>
+        <tfoot><tr class="tfoot-row">
+          <td>TOTAL</td>
+          <td id="sTMax" style="text-align:center"></td>
+          <td id="sTLog" style="text-align:center"></td>
+          <td id="sTPct" style="text-align:center"></td>
+        </tr></tfoot></table>
+      </div>
+      <div id="sumObs" style="font-size:12px;color:var(--muted);margin-bottom:14px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;">
+        <div style="text-align:center;border-top:1px solid var(--border);padding-top:10px;">
+          <div id="firmaInst" style="font-weight:700;font-size:13px;"></div>
+          <div style="font-size:10px;color:var(--muted);">Instructor(es)</div>
+        </div>
+        <div style="text-align:center;border-top:1px solid var(--border);padding-top:10px;">
+          <div id="firmaEval" style="font-weight:700;font-size:13px;"></div>
+          <div style="font-size:10px;color:var(--muted);">Aprendiz Coevaluador</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-s" onclick="go(2)">← Editar</button>
+      <button class="btn btn-p btn-lg" onclick="exportPDF()">⬇ Descargar PDF</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── DATA ──────────────────────────────────────
+const CRIT = [
+  { t:'El aprendiz realiza socialización Actividad reflexión inicial.', max:5 },
+  { t:'Evidencia de crucigrama a mano alzada o digital sobre los conceptos del Audio.', max:5 },
+  { t:'Desarrolló el cuestionario Audition_reconocimiento.docx.', max:5 },
+  { t:'Evidencia de ejercicios documento Audition_01.pdf.', max:10 },
+  { t:'Realizó la narración de historia Ilustrada (cuento infantil). Formato MP4.', max:15 },
+  { t:'Elabora Jingle o comercial para radio de empresa proyecto. Formato MP3 + guion.', max:20 },
+  { t:'Elabora el doblaje a un corto de video (tipo Premios Héroes). Tiempo 3 min. Formato MP4 + guion + Storyboard.', max:20 },
+  { t:'Podcast: evidencia en canal YouTube o plataforma podcast + documento planeación + guion.', max:20 },
+];
+
+let scores = CRIT.map(()=>0);
+let photoEval=null, photoEvad=null;
+let stampEval='', stampEvad='';
+let camTarget=null, camStream=null;
+let curStep=0;
+
+// ── INIT ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  document.getElementById('fechaField').value=now.toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  buildTable();
+});
+
+const pad=n=>String(n).padStart(2,'0');
+const stamp=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}  ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+// ── TABLE ──────────────────────────────────────
+function buildTable(){
+  const tb=document.getElementById('ckBody');
+  tb.innerHTML='';
+  CRIT.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-size:12px;line-height:1.5;">${c.t}</td>
+      <td style="text-align:center;"><span class="max-b">${c.max}</span></td>
+      <td style="text-align:center;">
+        <input class="score-in" id="sc${i}" type="number" min="0" max="${c.max}" value="0" oninput="upScore(${i})">
+      </td>
+      <td>
+        <div class="bar-w"><div class="bar" id="bar${i}" style="width:0%"></div></div>
+        <span class="bar-pct" id="pct${i}">0%</span>
+      </td>
+      <td><input class="obs-in" id="obs${i}" type="text" placeholder="…"></td>`;
+    tb.appendChild(tr);
+  });
+  upTotals();
+}
+
+function upScore(i){
+  let v=parseFloat(document.getElementById(`sc${i}`).value)||0;
+  if(v<0)v=0; if(v>CRIT[i].max)v=CRIT[i].max;
+  document.getElementById(`sc${i}`).value=v;
+  scores[i]=v;
+  const p=(v/CRIT[i].max*100).toFixed(0);
+  document.getElementById(`bar${i}`).style.width=p+'%';
+  document.getElementById(`pct${i}`).textContent=p+'%';
+  upTotals();
+}
+
+function upTotals(){
+  const tMax=CRIT.reduce((a,c)=>a+c.max,0);
+  const tLog=scores.reduce((a,b)=>a+b,0);
+  const pct=(tLog/tMax*100).toFixed(1);
+  document.getElementById('tMax').textContent=tMax;
+  document.getElementById('tLog').textContent=tLog.toFixed(1);
+  document.getElementById('tPct').textContent=pct+'%';
+  const rb=document.getElementById('resBox');
+  rb.style.display='block';
+  const ok=parseFloat(pct)>=90;
+  rb.className='res-box '+(ok?'cumple':'nocumple');
+  rb.innerHTML=`
+    <div class="res-verdict">${ok?'✅ CUMPLE':'❌ NO CUMPLE'}</div>
+    <div class="res-score">${tLog.toFixed(1)} <span style="font-size:20px;opacity:.5">/ ${tMax}</span></div>
+    <div class="res-pct">${pct}% alcanzado · mínimo requerido: 90%</div>
+    <div class="res-note">${ok
+      ?'El aprendiz cumple con los criterios establecidos para la aprobación de las actividades propuestas.'
+      :'Se concerta de manera inmediata el plan de mejoramiento con el instructor.'}</div>`;
+}
+
+// ── NAV ──────────────────────────────────────
+function go(n){
+  if(n===1){
+    document.getElementById('nameTagEval').textContent=document.getElementById('nomEval').value||'';
+    document.getElementById('nameTagEvad').textContent=document.getElementById('nomEvad').value||'';
+  }
+  if(n===3) buildSummary();
+  document.getElementById(`step${curStep}`).classList.remove('on');
+  document.getElementById(`step${n}`).classList.add('on');
+  for(let i=0;i<4;i++){
+    document.getElementById(`ps${i}`).className='prog-step'+(i===n?' on':(i<n?' done':''));
+    document.getElementById(`pip${i}`).className='pip'+(i===n?' on':(i<n?' done':''));
+    if(i<3) document.getElementById(`pl${i}`).className='prog-line'+(i<n?' done':'');
+  }
+  curStep=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── CAMERA ──────────────────────────────────
+function openCam(who){
+  camTarget=who;
+  document.getElementById('camTitle').textContent=who==='eval'?'📷 Foto del Coevaluador':'📷 Foto del Aprendiz Evaluado';
+  document.getElementById('camModal').classList.add('open');
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false})
+    .then(s=>{camStream=s;document.getElementById('camVideo').srcObject=s;})
+    .catch(()=>{closeCam();alert('No se pudo acceder a la cámara. Sube la imagen manualmente.');});
+}
+function closeCam(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  document.getElementById('camModal').classList.remove('open');
+}
+function snapPhoto(){
+  const v=document.getElementById('camVideo');
+  const c=document.getElementById('camCanvas');
+  c.width=v.videoWidth||640; c.height=v.videoHeight||480;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(v,0,0);
+  addWM(ctx,c.width,c.height,camTarget);
+  applyPhoto(camTarget,c.toDataURL('image/jpeg',.85));
+  closeCam();
+}
+function fromFile(e,who){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      c.width=img.width; c.height=img.height;
+      const ctx=c.getContext('2d');
+      ctx.drawImage(img,0,0);
+      addWM(ctx,c.width,c.height,who);
+      applyPhoto(who,c.toDataURL('image/jpeg',.85));
+    };
+    img.src=ev.target.result;
+  };
+  r.readAsDataURL(f);
+}
+function addWM(ctx,w,h,who){
+  const now=new Date(); const st=stamp(now);
+  const name=who==='eval'
+    ?(document.getElementById('nomEval').value||'Coevaluador')
+    :(document.getElementById('nomEvad').value||'Evaluado');
+  ctx.fillStyle='rgba(0,15,10,.72)';
+  ctx.fillRect(0,h-52,w,52);
+  ctx.fillStyle='#00E5CC';
+  ctx.font=`bold ${Math.max(11,Math.round(w*.02))}px Arial`;
+  ctx.fillText(name,10,h-30);
+  ctx.fillStyle='rgba(0,229,204,.8)';
+  ctx.font=`${Math.max(9,Math.round(w*.016))}px Arial`;
+  ctx.fillText('🎧 '+st+' · Audition 3172276',10,h-10);
+}
+function applyPhoto(who,data){
+  const now=new Date(); const st=stamp(now);
+  if(who==='eval'){
+    photoEval=data; stampEval=st;
+    const i=document.getElementById('prevEval'); i.src=data; i.classList.add('show');
+    const s=document.getElementById('stampEval'); s.textContent='🕐 '+st; s.classList.add('show');
+    document.getElementById('boxEval').classList.add('has');
+  } else {
+    photoEvad=data; stampEvad=st;
+    const i=document.getElementById('prevEvad'); i.src=data; i.classList.add('show');
+    const s=document.getElementById('stampEvad'); s.textContent='🕐 '+st; s.classList.add('show');
+    document.getElementById('boxEvad').classList.add('has');
+  }
+}
+
+// ── SUMMARY ──────────────────────────────────
+function buildSummary(){
+  const nEval=document.getElementById('nomEval').value||'—';
+  const dEval=document.getElementById('docEval').value||'—';
+  const nEvad=document.getElementById('nomEvad').value||'—';
+  const dEvad=document.getElementById('docEvad').value||'—';
+  const inst =document.getElementById('instructor').value||'—';
+  const fecha=document.getElementById('fechaField').value||'—';
+  const ficha=document.getElementById('ficha').value||'—';
+  const obs  =document.getElementById('obsGen').value;
+  const tMax=CRIT.reduce((a,c)=>a+c.max,0);
+  const tLog=scores.reduce((a,b)=>a+b,0);
+  const pct=(tLog/tMax*100).toFixed(1);
+  const ok=parseFloat(pct)>=90;
+
+  document.getElementById('sumGrid').innerHTML=`
+    <div class="sum-item"><div class="sum-lbl">Coevaluador</div><div class="sum-val">${nEval}</div></div>
+    <div class="sum-item"><div class="sum-lbl">D.I. Coevaluador</div><div class="sum-val">${dEval}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Aprendiz Evaluado</div><div class="sum-val">${nEvad}</div></div>
+    <div class="sum-item"><div class="sum-lbl">D.I. Evaluado</div><div class="sum-val">${dEvad}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Instructor</div><div class="sum-val">${inst}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Fecha</div><div class="sum-val" style="font-size:11px">${fecha}</div></div>
+    <div class="sum-item" style="grid-column:1/-1"><div class="sum-lbl">Ficha</div><div class="sum-val" style="font-size:11px">${ficha}</div></div>`;
+
+  let ph='';
+  if(photoEval) ph+=`<div class="sum-photo"><img src="${photoEval}"><p><b>${nEval}</b><br><span style="font-size:9px">${stampEval}</span></p></div>`;
+  if(photoEvad) ph+=`<div class="sum-photo"><img src="${photoEvad}"><p><b>${nEvad}</b><br><span style="font-size:9px">${stampEvad}</span></p></div>`;
+  document.getElementById('sumPhotos').innerHTML=ph;
+
+  document.getElementById('juicioBox').innerHTML=`
+    <div class="juicio ${ok?'cumple':'nocumple'}">
+      <div class="juicio-ico">${ok?'✅':'❌'}</div>
+      <div class="juicio-txt">
+        <h3>${ok?'CUMPLE':'NO CUMPLE'}</h3>
+        <p>${tLog.toFixed(1)} / ${tMax} pts · ${pct}% · mínimo: 90%</p>
+        <p style="margin-top:3px;">${ok
+          ?'El aprendiz cumple con los criterios establecidos para la aprobación.'
+          :'Se concerta de manera inmediata el plan de mejoramiento con el instructor.'}</p>
+      </div>
+    </div>`;
+
+  const sb=document.getElementById('sumBody');
+  sb.innerHTML='';
+  CRIT.forEach((c,i)=>{
+    const s=scores[i]; const p=(s/c.max*100).toFixed(0);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-size:11px">${c.t}</td>
+      <td style="text-align:center"><span class="max-b">${c.max}</span></td>
+      <td style="text-align:center;font-weight:700;font-family:'JetBrains Mono',monospace">${s.toFixed(1)}</td>
+      <td style="text-align:center"><span class="pill">${p}%</span></td>`;
+    sb.appendChild(tr);
+  });
+  document.getElementById('sTMax').textContent=tMax;
+  document.getElementById('sTLog').textContent=tLog.toFixed(1);
+  document.getElementById('sTPct').textContent=pct+'%';
+  document.getElementById('sumObs').innerHTML=obs?`<b style="color:var(--text)">Observaciones:</b> ${obs}`:'';
+  document.getElementById('firmaInst').textContent=inst;
+  document.getElementById('firmaEval').textContent=nEval;
+}
+
+// ── PDF EXPORT ────────────────────────────────
+async function exportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, M=14;
+  let y=18;
+
+  const nEval=document.getElementById('nomEval').value||'—';
+  const dEval=document.getElementById('docEval').value||'—';
+  const nEvad=document.getElementById('nomEvad').value||'—';
+  const dEvad=document.getElementById('docEvad').value||'—';
+  const inst =document.getElementById('instructor').value||'Juan Viveros';
+  const fecha=document.getElementById('fechaField').value||'—';
+  const ficha=document.getElementById('ficha').value||'—';
+  const obs  =document.getElementById('obsGen').value;
+  const tMax=CRIT.reduce((a,c)=>a+c.max,0);
+  const tLog=scores.reduce((a,b)=>a+b,0);
+  const pct=(tLog/tMax*100).toFixed(1);
+  const ok=parseFloat(pct)>=90;
+
+  // ─ Header
+  doc.setFillColor(0,80,70); doc.rect(0,0,W,26,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('SERVICIO NACIONAL DE APRENDIZAJE – SENA',W/2,9,{align:'center'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('SENA REGIONAL TOLIMA · Centro de Industria y Construcción',W/2,15,{align:'center'});
+  doc.text('Lista de Chequeo Para Evaluar Evidencias de Producto · Adobe Audition',W/2,21,{align:'center'});
+  y=32;
+
+  // ─ Datos
+  doc.setFillColor(235,250,247);doc.rect(M,y-4,W-M*2,40,'F');
+  const fld=(lbl,val,x,yy)=>{
+    doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(0,120,100);
+    doc.text(lbl,x,yy);
+    doc.setFont('helvetica','normal');doc.setTextColor(20,40,35);doc.setFontSize(9);
+    doc.text(val,x,yy+5);
+  };
+  fld('Aprendiz Coevaluador:',nEval,M+2,y+2);
+  fld('D.I.:',dEval,M+2,y+12);
+  fld('Aprendiz Evaluado:',nEvad,W/2+2,y+2);
+  fld('D.I.:',dEvad,W/2+2,y+12);
+  fld('Instructor:',inst,M+2,y+22);
+  fld('Fecha:',fecha,W/2+2,y+22);
+  fld('Ficha:',ficha,M+2,y+32);
+  y+=44;
+
+  // ─ Fotos
+  if(photoEval||photoEvad){
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(0,120,100);
+    doc.text('EVIDENCIA FOTOGRÁFICA',M,y);y+=5;
+    if(photoEval){try{doc.addImage(photoEval,'JPEG',M,y,40,30);
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+      doc.text(nEval,M,y+32);doc.text(stampEval,M,y+36);}catch(e){}}
+    if(photoEvad){try{doc.addImage(photoEvad,'JPEG',W/2+M/2,y,40,30);
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+      doc.text(nEvad,W/2+M/2,y+32);doc.text(stampEvad,W/2+M/2,y+36);}catch(e){}}
+    y+=42;
+  }
+
+  // ─ Table header
+  doc.setFillColor(0,80,70);doc.rect(M,y,W-M*2,7,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('Criterios de Evaluación',M+2,y+5);
+  doc.text('Máx.',140,y+5,{align:'center'});
+  doc.text('Log.',158,y+5,{align:'center'});
+  doc.text('%',174,y+5,{align:'center'});
+  y+=8;
+
+  CRIT.forEach((c,i)=>{
+    const s=scores[i]; const p=(s/c.max*100).toFixed(0);
+    const lines=doc.splitTextToSize(c.t,120);
+    const rh=Math.max(10,lines.length*4.2+3);
+    if(y+rh>272){doc.addPage();y=18;}
+    doc.setFillColor(i%2===0?245:255,i%2===0?252:255,i%2===0?250:255);
+    doc.rect(M,y,W-M*2,rh,'F');
+    doc.setTextColor(20,40,35);doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text(lines,M+2,y+4);
+    doc.text(String(c.max),140,y+rh/2+1.5,{align:'center'});
+    doc.text(s.toFixed(1),158,y+rh/2+1.5,{align:'center'});
+    doc.text(p+'%',174,y+rh/2+1.5,{align:'center'});
+    doc.setDrawColor(200,235,228);doc.rect(M,y,W-M*2,rh,'S');
+    y+=rh;
+  });
+
+  // ─ Total
+  doc.setFillColor(0,80,70);doc.rect(M,y,W-M*2,9,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('TOTAL',M+2,y+6);
+  doc.text(String(tMax),140,y+6,{align:'center'});
+  doc.text(tLog.toFixed(1),158,y+6,{align:'center'});
+  doc.text(pct+'%',174,y+6,{align:'center'});
+  y+=14;
+
+  // ─ Juicio
+  if(y>258){doc.addPage();y=18;}
+  doc.setFillColor(ok?225:255,ok?245:220,ok?235:220);
+  doc.rect(M,y,W-M*2,22,'F');
+  doc.setDrawColor(ok?0:190,ok?160:40,ok?130:40);
+  doc.rect(M,y,W-M*2,22,'S');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.setTextColor(ok?0:170,ok?100:30,ok?80:30);
+  doc.text('JUICIO EVALUATIVO: '+(ok?'✓ CUMPLE':'✗ NO CUMPLE'),M+4,y+8);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+  doc.text(ok
+    ?'El aprendiz cumple con los criterios establecidos para la aprobación de las actividades propuestas.'
+    :'Se concerta de manera inmediata el plan de mejoramiento con el instructor.',M+4,y+15);
+  y+=28;
+
+  // ─ Obs
+  if(obs){
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(0,120,100);
+    doc.text('Observaciones:',M,y);y+=5;
+    doc.setFont('helvetica','normal');doc.setTextColor(50,50,50);
+    const ol=doc.splitTextToSize(obs,W-M*2);
+    doc.text(ol,M,y);y+=ol.length*4.5+6;
+  }
+
+  // ─ Firmas
+  if(y>250){doc.addPage();y=30;}
+  doc.setDrawColor(180,220,210);
+  doc.line(M,y+12,M+60,y+12);
+  doc.line(W-M-60,y+12,W-M,y+12);
+  doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(20,40,35);
+  doc.text(inst,M+30,y+18,{align:'center'});
+  doc.text(nEval,W-M-30,y+18,{align:'center'});
+  doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(120,140,130);
+  doc.text('Instructor(es)',M+30,y+23,{align:'center'});
+  doc.text('Aprendiz Coevaluador',W-M-30,y+23,{align:'center'});
+
+  // ─ Footer all pages
+  const np=doc.internal.getNumberOfPages();
+  for(let p=1;p<=np;p++){
+    doc.setPage(p);
+    doc.setFillColor(0,80,70);doc.rect(0,290,W,7,'F');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);
+    doc.text(`SENA Regional Tolima · Coevaluación Adobe Audition · Ficha 3172276 · Pág ${p}/${np}`,W/2,294.5,{align:'center'});
+  }
+
+  const fn=`Coevaluacion_Audition_${(nEvad).replace(/ /g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(fn);
+}
+</script>
+</body>
+</html>
