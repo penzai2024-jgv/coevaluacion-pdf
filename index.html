@@ -96,13 +96,13 @@ body::before{
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .fg{margin-bottom:16px;}
 label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase;}
-input[type=text],textarea,select{
+input[type=text],input[type=password],textarea,select{
   width:100%;padding:11px 14px;
   background:var(--bg3);border:1.5px solid var(--border);
   border-radius:8px;font-family:'Space Grotesk',sans-serif;
   font-size:13px;color:var(--text);outline:none;transition:.2s;
 }
-input[type=text]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,204,.1);background:var(--bg2);}
+input[type=text]:focus,input[type=password]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,204,.1);background:var(--bg2);}
 textarea{min-height:80px;resize:vertical;}
 
 /* ── PHOTO ── */
@@ -124,7 +124,14 @@ textarea{min-height:80px;resize:vertical;}
 .modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;width:90%;max-width:440px;text-align:center;}
 .modal-box h2{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;}
 #camVideo{width:100%;border-radius:10px;background:#000;}
-.modal-btns{margin-top:14px;display:flex;gap:10px;justify-content:center;}
+.modal-btns{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.modal-box.wide{max-width:760px;max-height:92vh;overflow-y:auto;text-align:left;}
+.adm-msg{font-size:12px;color:var(--accent);margin:8px 0 14px;line-height:1.5;min-height:16px;}
+.adm-msg.err{color:var(--accent2);}
+.crit-row{display:grid;grid-template-columns:1fr 72px 36px;gap:8px;align-items:start;margin-bottom:8px;}
+.crit-row textarea{min-height:48px;font-size:12px;padding:8px 10px;}
+.crit-row .score-in{width:100%;}
+.btn-adm{padding:6px 12px;font-size:11px;}
 
 /* ── BUTTONS ── */
 .btn{
@@ -230,9 +237,10 @@ table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   <div class="hdr-inner">
     <div class="hdr-badge">SENA</div>
     <div class="hdr-title">
-      <h1>Coevaluación · Adobe Audition</h1>
-      <p>Ficha 3172276 · Post-producción Multimedia · 2026</p>
+      <h1 id="hdrNombre"></h1>
+      <p id="hdrSub"></p>
     </div>
+    <button class="btn btn-s btn-adm" onclick="openAdmin()">⚙ Admin</button>
     <div class="step-pip">
       <div class="pip on" id="pip0"></div>
       <div class="pip" id="pip1"></div>
@@ -251,6 +259,55 @@ table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
     <div class="modal-btns">
       <button class="btn btn-p" onclick="snapPhoto()">📸 Capturar</button>
       <button class="btn btn-s" onclick="closeCam()">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div class="modal" id="loginModal">
+  <div class="modal-box" style="text-align:left;">
+    <h2>⚙ Acceso de administrador</h2>
+    <div class="fg"><label>Usuario</label><input type="text" id="admUser" autocomplete="off"></div>
+    <div class="fg"><label>Clave</label><input type="password" id="admPass" autocomplete="off" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <div class="adm-msg err" id="loginErr"></div>
+    <div class="modal-btns">
+      <button class="btn btn-p" onclick="adminLogin()">Entrar</button>
+      <button class="btn btn-s" onclick="closeModal('loginModal')">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="modal" id="adminModal">
+  <div class="modal-box wide">
+    <h2>⚙ Configurar coevaluación</h2>
+    <div class="fg"><label>Subir lista de chequeo (.xlsx, .docx, .pdf, .csv)</label>
+      <input type="file" id="admFile" accept=".xlsx,.docx,.pdf,.csv" style="font-size:12px;color:var(--muted);" onchange="loadChecklist(event)">
+    </div>
+    <div class="adm-msg" id="admMsg"></div>
+    <div class="g2">
+      <div class="fg"><label>Nombre de la coevaluación</label><input type="text" id="a_nombre"></div>
+      <div class="fg"><label>Tema</label><input type="text" id="a_tema"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>Ficha</label><input type="text" id="a_ficha"></div>
+      <div class="fg"><label>Programa</label><input type="text" id="a_programa"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>Instructor</label><input type="text" id="a_instructor"></div>
+      <div class="fg"><label>Mínimo para CUMPLE (%)</label><input class="score-in" type="number" min="0" max="100" id="a_minimo"></div>
+    </div>
+    <div class="fg"><label>Competencia</label><input type="text" id="a_competencia"></div>
+    <div class="fg"><label>Actividad</label><input type="text" id="a_actividad"></div>
+    <label>Criterios y puntaje máximo · Total: <span id="admTotal">0</span></label>
+    <div id="critRows"></div>
+    <button class="btn btn-o btn-adm" onclick="addCritRow('',1)">+ Agregar criterio</button>
+    <div class="fg" style="margin-top:16px;"><label>Enlace para aprendices</label><input type="text" id="admLink" readonly placeholder="Se genera al copiar el enlace"></div>
+    <div class="modal-btns">
+      <button class="btn btn-p" onclick="saveAdmin()">Guardar</button>
+      <button class="btn btn-o" onclick="copyLink()">Guardar y copiar enlace</button>
+      <button class="btn btn-s" onclick="fillAdmin(CFG_DEF)">Restaurar original</button>
+      <button class="btn btn-s" onclick="closeModal('adminModal')">✕ Cerrar</button>
     </div>
   </div>
 </div>
@@ -282,10 +339,10 @@ table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
         <div class="fg"><label>Documento del Evaluado</label><input type="text" id="docEvad" placeholder="N° documento"></div>
       </div>
       <div class="g2">
-        <div class="fg"><label>Instructor</label><input type="text" id="instructor" value="Juan Viveros"></div>
+        <div class="fg"><label>Instructor</label><input type="text" id="instructor" readonly></div>
         <div class="fg"><label>Fecha</label><input type="text" id="fechaField" readonly></div>
       </div>
-      <div class="fg"><label>Ficha / Programa</label><input type="text" id="ficha" value="3172276 – Tecnólogo de Producción en Multimedia"></div>
+      <div class="fg"><label>Ficha / Programa</label><input type="text" id="ficha" readonly></div>
     </div>
     <div class="nav"><div></div>
       <button class="btn btn-p btn-lg" onclick="go(1)">Siguiente: Fotografías →</button>
@@ -329,9 +386,9 @@ table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   <!-- ══ STEP 3 ══ -->
   <div class="step" id="step2">
     <div class="card">
-      <div class="card-tag">Lista de Chequeo · Audio</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;"><b style="color:var(--text)">Competencia:</b> Realizar la post-producción para generar la animación final.</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;"><b style="color:var(--text)">Actividad:</b> Agregar efectos de sonido al desarrollo de la Multimedia.</div>
+      <div class="card-tag" id="ckTag"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;"><b style="color:var(--text)">Competencia:</b> <span id="ckComp"></span></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;"><b style="color:var(--text)">Actividad:</b> <span id="ckAct"></span></div>
       <div class="tbl-wrap">
         <table class="ck">
           <thead><tr>
@@ -366,7 +423,7 @@ table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
       <div style="text-align:center;margin-bottom:18px;padding:14px;background:var(--bg3);border-radius:8px;">
         <div style="font-weight:800;font-size:13px;color:var(--accent);">SERVICIO NACIONAL DE APRENDIZAJE – SENA</div>
         <div style="font-size:11px;color:var(--muted);">SENA Regional Tolima · Centro de Industria y Construcción</div>
-        <div style="font-size:11px;color:var(--muted);">Lista de Chequeo Para Evaluar Evidencias de Producto</div>
+        <div style="font-size:11px;color:var(--muted);">Lista de Chequeo Para Evaluar Evidencias de Producto · <span id="sumNombre"></span></div>
       </div>
       <div class="sum-grid" id="sumGrid"></div>
       <div class="sum-photos" id="sumPhotos"></div>
@@ -408,7 +465,7 @@ table.ck{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
 
 <script>
 // ── DATA ──────────────────────────────────────
-const CRIT = [
+const CRIT_DEF = [
   { t:'El aprendiz realiza socialización Actividad reflexión inicial.', max:5 },
   { t:'Evidencia de crucigrama a mano alzada o digital sobre los conceptos del Audio.', max:5 },
   { t:'Desarrolló el cuestionario Audition_reconocimiento.docx.', max:5 },
@@ -419,7 +476,26 @@ const CRIT = [
   { t:'Podcast: evidencia en canal YouTube o plataforma podcast + documento planeación + guion.', max:20 },
 ];
 
+const CFG_DEF = {
+  nombre:'Coevaluación · Adobe Audition',
+  tema:'Post-producción Multimedia',
+  ficha:'3172276',
+  programa:'Tecnólogo de Producción en Multimedia',
+  instructor:'Juan Viveros',
+  competencia:'Realizar la post-producción para generar la animación final.',
+  actividad:'Agregar efectos de sonido al desarrollo de la Multimedia.',
+  minimo:90,
+  crit:CRIT_DEF,
+};
+const CFG_TXT = ['nombre','tema','ficha','programa','instructor','competencia','actividad'];
+const CFG_KEY = 'coevaluacion_cfg';
+// SHA-256 de "usuario:clave"; la app es estática, así que esto no reemplaza un control de acceso real
+const ADMIN_HASH = 'ba038ed9842a7310699c2ccdfc0ec7dfffeadfe628072ac92ce2d8ea593097a5';
+
+let CFG = loadCfg();
+let CRIT = CFG.crit;
 let scores = CRIT.map(()=>0);
+let adminOk = false;
 let photoEval=null, photoEvad=null;
 let stampEval='', stampEvad='';
 let camTarget=null, camStream=null;
@@ -429,7 +505,7 @@ let curStep=0;
 document.addEventListener('DOMContentLoaded',()=>{
   const now=new Date();
   document.getElementById('fechaField').value=now.toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  buildTable();
+  applyCfg();
 });
 
 const pad=n=>String(n).padStart(2,'0');
@@ -442,7 +518,7 @@ function buildTable(){
   CRIT.forEach((c,i)=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td style="font-size:12px;line-height:1.5;">${c.t}</td>
+      <td style="font-size:12px;line-height:1.5;">${esc(c.t)}</td>
       <td style="text-align:center;"><span class="max-b">${c.max}</span></td>
       <td style="text-align:center;">
         <input class="score-in" id="sc${i}" type="number" min="0" max="${c.max}" value="0" oninput="upScore(${i})">
@@ -477,12 +553,12 @@ function upTotals(){
   document.getElementById('tPct').textContent=pct+'%';
   const rb=document.getElementById('resBox');
   rb.style.display='block';
-  const ok=parseFloat(pct)>=90;
+  const ok=tLog/tMax*100>=CFG.minimo;
   rb.className='res-box '+(ok?'cumple':'nocumple');
   rb.innerHTML=`
     <div class="res-verdict">${ok?'✅ CUMPLE':'❌ NO CUMPLE'}</div>
     <div class="res-score">${tLog.toFixed(1)} <span style="font-size:20px;opacity:.5">/ ${tMax}</span></div>
-    <div class="res-pct">${pct}% alcanzado · mínimo requerido: 90%</div>
+    <div class="res-pct">${pct}% alcanzado · mínimo requerido: ${CFG.minimo}%</div>
     <div class="res-note">${ok
       ?'El aprendiz cumple con los criterios establecidos para la aprobación de las actividades propuestas.'
       :'Se concerta de manera inmediata el plan de mejoramiento con el instructor.'}</div>`;
@@ -558,7 +634,7 @@ function addWM(ctx,w,h,who){
   ctx.fillText(name,10,h-30);
   ctx.fillStyle='rgba(0,229,204,.8)';
   ctx.font=`${Math.max(9,Math.round(w*.016))}px Arial`;
-  ctx.fillText('🎧 '+st+' · Audition 3172276',10,h-10);
+  ctx.fillText('🎧 '+st+' · '+CFG.tema+' '+CFG.ficha,10,h-10);
 }
 function applyPhoto(who,data){
   const now=new Date(); const st=stamp(now);
@@ -588,16 +664,16 @@ function buildSummary(){
   const tMax=CRIT.reduce((a,c)=>a+c.max,0);
   const tLog=scores.reduce((a,b)=>a+b,0);
   const pct=(tLog/tMax*100).toFixed(1);
-  const ok=parseFloat(pct)>=90;
+  const ok=tLog/tMax*100>=CFG.minimo;
 
   document.getElementById('sumGrid').innerHTML=`
     <div class="sum-item"><div class="sum-lbl">Coevaluador</div><div class="sum-val">${nEval}</div></div>
     <div class="sum-item"><div class="sum-lbl">D.I. Coevaluador</div><div class="sum-val">${dEval}</div></div>
     <div class="sum-item"><div class="sum-lbl">Aprendiz Evaluado</div><div class="sum-val">${nEvad}</div></div>
     <div class="sum-item"><div class="sum-lbl">D.I. Evaluado</div><div class="sum-val">${dEvad}</div></div>
-    <div class="sum-item"><div class="sum-lbl">Instructor</div><div class="sum-val">${inst}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Instructor</div><div class="sum-val">${esc(inst)}</div></div>
     <div class="sum-item"><div class="sum-lbl">Fecha</div><div class="sum-val" style="font-size:11px">${fecha}</div></div>
-    <div class="sum-item" style="grid-column:1/-1"><div class="sum-lbl">Ficha</div><div class="sum-val" style="font-size:11px">${ficha}</div></div>`;
+    <div class="sum-item" style="grid-column:1/-1"><div class="sum-lbl">Ficha</div><div class="sum-val" style="font-size:11px">${esc(ficha)}</div></div>`;
 
   let ph='';
   if(photoEval) ph+=`<div class="sum-photo"><img src="${photoEval}"><p><b>${nEval}</b><br><span style="font-size:9px">${stampEval}</span></p></div>`;
@@ -609,7 +685,7 @@ function buildSummary(){
       <div class="juicio-ico">${ok?'✅':'❌'}</div>
       <div class="juicio-txt">
         <h3>${ok?'CUMPLE':'NO CUMPLE'}</h3>
-        <p>${tLog.toFixed(1)} / ${tMax} pts · ${pct}% · mínimo: 90%</p>
+        <p>${tLog.toFixed(1)} / ${tMax} pts · ${pct}% · mínimo: ${CFG.minimo}%</p>
         <p style="margin-top:3px;">${ok
           ?'El aprendiz cumple con los criterios establecidos para la aprobación.'
           :'Se concerta de manera inmediata el plan de mejoramiento con el instructor.'}</p>
@@ -621,7 +697,7 @@ function buildSummary(){
   CRIT.forEach((c,i)=>{
     const s=scores[i]; const p=(s/c.max*100).toFixed(0);
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="font-size:11px">${c.t}</td>
+    tr.innerHTML=`<td style="font-size:11px">${esc(c.t)}</td>
       <td style="text-align:center"><span class="max-b">${c.max}</span></td>
       <td style="text-align:center;font-weight:700;font-family:'JetBrains Mono',monospace">${s.toFixed(1)}</td>
       <td style="text-align:center"><span class="pill">${p}%</span></td>`;
@@ -635,6 +711,380 @@ function buildSummary(){
   document.getElementById('firmaEval').textContent=nEval;
 }
 
+// ── CONFIG ───────────────────────────────────
+function esc(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function cleanCfg(o){
+  if(!o||!Array.isArray(o.crit))return null;
+  const crit=o.crit
+    .map(c=>({t:String(c&&c.t||'').trim(),max:Number(c&&c.max)}))
+    .filter(c=>c.t&&c.max>0&&isFinite(c.max));
+  if(!crit.length)return null;
+  const out={crit};
+  CFG_TXT.forEach(k=>out[k]=String(o[k]??'').trim());
+  const m=Number(o.minimo);
+  out.minimo=m>=0&&m<=100?m:CFG_DEF.minimo;
+  return out;
+}
+function storeCfg(c){
+  try{localStorage.setItem(CFG_KEY,JSON.stringify(c));return true;}catch(e){return false;}
+}
+function loadCfg(){
+  const h=location.hash.match(/^#cfg=(.+)$/);
+  if(h){
+    try{
+      const bin=atob(h[1].replace(/-/g,'+').replace(/_/g,'/'));
+      const c=cleanCfg(JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,x=>x.charCodeAt(0)))));
+      if(c){
+        if(storeCfg(c))history.replaceState(null,'',location.pathname+location.search);
+        return c;
+      }
+    }catch(e){}
+  }
+  try{
+    const c=cleanCfg(JSON.parse(localStorage.getItem(CFG_KEY)));
+    if(c)return c;
+  }catch(e){}
+  return CFG_DEF;
+}
+function cfgLink(c){
+  const bytes=new TextEncoder().encode(JSON.stringify(c));
+  const b64=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return location.href.split('#')[0]+'#cfg='+b64;
+}
+function applyCfg(){
+  CRIT=CFG.crit;
+  scores=CRIT.map(()=>0);
+  document.title=CFG.nombre+' · SENA';
+  document.getElementById('hdrNombre').textContent=CFG.nombre;
+  document.getElementById('hdrSub').textContent=`Ficha ${CFG.ficha} · ${CFG.tema} · ${new Date().getFullYear()}`;
+  document.getElementById('instructor').value=CFG.instructor;
+  document.getElementById('ficha').value=[CFG.ficha,CFG.programa].filter(Boolean).join(' – ');
+  document.getElementById('ckTag').textContent='Lista de Chequeo · '+CFG.tema;
+  document.getElementById('ckComp').textContent=CFG.competencia;
+  document.getElementById('ckAct').textContent=CFG.actividad;
+  document.getElementById('sumNombre').textContent=CFG.nombre;
+  buildTable();
+  if(curStep===3)buildSummary();
+}
+
+// ── ADMIN ────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function admMsg(txt,err){
+  const m=document.getElementById('admMsg');
+  m.textContent=txt;
+  m.className='adm-msg'+(err?' err':'');
+}
+function openAdmin(){
+  if(adminOk){showAdminPanel();return;}
+  document.getElementById('admUser').value='';
+  document.getElementById('admPass').value='';
+  document.getElementById('loginErr').textContent='';
+  document.getElementById('loginModal').classList.add('open');
+  document.getElementById('admUser').focus();
+}
+async function adminLogin(){
+  const err=document.getElementById('loginErr');
+  if(!window.crypto||!crypto.subtle){err.textContent='Abre la app por HTTPS para iniciar sesión.';return;}
+  const u=document.getElementById('admUser').value.trim();
+  const p=document.getElementById('admPass').value;
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(u+':'+p));
+  const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hex!==ADMIN_HASH){err.textContent='Usuario o clave incorrectos.';return;}
+  adminOk=true;
+  closeModal('loginModal');
+  showAdminPanel();
+}
+function showAdminPanel(){
+  fillAdmin(CFG);
+  admMsg('');
+  document.getElementById('admLink').value='';
+  document.getElementById('adminModal').classList.add('open');
+}
+function fillAdmin(c){
+  CFG_TXT.forEach(k=>document.getElementById('a_'+k).value=c[k]);
+  document.getElementById('a_minimo').value=c.minimo;
+  setCritRows(c.crit);
+}
+function setCritRows(list){
+  document.getElementById('critRows').innerHTML='';
+  list.forEach(c=>addCritRow(c.t,c.max));
+}
+function addCritRow(t,max){
+  const row=document.createElement('div');
+  row.className='crit-row';
+  const ta=document.createElement('textarea');
+  ta.value=t;
+  const n=document.createElement('input');
+  n.type='number'; n.min='0'; n.className='score-in'; n.value=max;
+  n.oninput=upAdmTotal;
+  const del=document.createElement('button');
+  del.className='btn btn-s btn-adm'; del.textContent='✕';
+  del.onclick=()=>{row.remove();upAdmTotal();};
+  row.append(ta,n,del);
+  document.getElementById('critRows').appendChild(row);
+  upAdmTotal();
+}
+function readCritRows(){
+  return [...document.querySelectorAll('#critRows .crit-row')].map(r=>({
+    t:r.querySelector('textarea').value.trim(),
+    max:parseFloat(r.querySelector('input').value),
+  }));
+}
+function upAdmTotal(){
+  const t=readCritRows().reduce((a,c)=>a+(c.max||0),0);
+  document.getElementById('admTotal').textContent=+t.toFixed(2);
+}
+function saveAdmin(){
+  const rows=readCritRows();
+  if(!rows.length){admMsg('Agrega al menos un criterio.',true);return false;}
+  const bad=rows.findIndex(c=>!c.t||!(c.max>0));
+  if(bad>=0){admMsg(`El criterio ${bad+1} necesita texto y un puntaje mayor que 0.`,true);return false;}
+  const m=parseFloat(document.getElementById('a_minimo').value);
+  if(!(m>=0&&m<=100)){admMsg('El mínimo debe estar entre 0 y 100.',true);return false;}
+  const c={crit:rows,minimo:m};
+  CFG_TXT.forEach(k=>c[k]=document.getElementById('a_'+k).value.trim());
+  CFG=cleanCfg(c);
+  const stored=storeCfg(CFG);
+  applyCfg();
+  admMsg(stored?'Guardado. Los puntajes de esta evaluación se reiniciaron.':'Aplicado solo a esta sesión: el navegador no permitió guardar.',!stored);
+  return true;
+}
+async function copyLink(){
+  if(!saveAdmin())return;
+  const inp=document.getElementById('admLink');
+  inp.value=cfgLink(CFG);
+  inp.select();
+  try{
+    await navigator.clipboard.writeText(inp.value);
+    admMsg('Guardado y enlace copiado. Compártelo con los aprendices.');
+  }catch(e){
+    admMsg('Guardado. Copia el enlace manualmente.');
+  }
+}
+
+// ── LECTURA DE LA LISTA DE CHEQUEO ───────────
+const normTxt=s=>String(s??'').replace(/\s+/g,' ').trim();
+const toNum=s=>{
+  const v=normTxt(s).replace(/%$/,'').replace(',','.').trim();
+  return /^\d+(\.\d+)?$/.test(v)?parseFloat(v):null;
+};
+const parseXml=s=>new DOMParser().parseFromString(s,'application/xml');
+const xmlTags=(n,t)=>[...n.getElementsByTagName('*')].filter(e=>e.localName===t);
+const xmlText=n=>xmlTags(n,'t').map(e=>e.textContent).join('');
+const scriptCache={};
+function loadScript(url){
+  return scriptCache[url]||(scriptCache[url]=new Promise((ok,fail)=>{
+    const s=document.createElement('script');
+    s.src=url;
+    s.onload=ok;
+    s.onerror=()=>fail(new Error('No se pudo cargar el lector de documentos. Revisa la conexión.'));
+    document.head.appendChild(s);
+  }));
+}
+async function openZip(file){
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  return JSZip.loadAsync(file);
+}
+async function readXlsx(file){
+  const zip=await openZip(file);
+  const ssFile=zip.file('xl/sharedStrings.xml');
+  const ss=ssFile?xmlTags(parseXml(await ssFile.async('string')),'si').map(xmlText):[];
+  const sheets=zip.file(/^xl\/worksheets\/sheet\d+\.xml$/).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  if(!sheets.length)throw new Error('El Excel no tiene hojas legibles.');
+  const doc=parseXml(await sheets[0].async('string'));
+  return xmlTags(doc,'row').map(row=>{
+    const out=[];
+    xmlTags(row,'c').forEach(c=>{
+      const col=(c.getAttribute('r')||'').replace(/\d+/g,'').split('').reduce((a,l)=>a*26+l.charCodeAt(0)-64,0)-1;
+      const v=xmlTags(c,'v')[0];
+      const type=c.getAttribute('t');
+      let val='';
+      if(type==='s'&&v)val=ss[+v.textContent]??'';
+      else if(type==='inlineStr')val=xmlText(c);
+      else if(v)val=v.textContent;
+      out[col>=0?col:out.length]=val;
+    });
+    return Array.from(out,x=>x??'');
+  });
+}
+async function readDocx(file){
+  const zip=await openZip(file);
+  const main=zip.file('word/document.xml');
+  if(!main)throw new Error('El Word no tiene contenido legible.');
+  const rows=[];
+  const walk=n=>[...n.children].forEach(ch=>{
+    if(ch.localName==='p')rows.push([xmlText(ch)]);
+    else if(ch.localName==='tbl')xmlTags(ch,'tr').forEach(tr=>{
+      rows.push([...tr.children].filter(c=>c.localName==='tc').map(tc=>xmlTags(tc,'p').map(xmlText).join(' ')));
+    });
+    else walk(ch);
+  });
+  walk(parseXml(await main.async('string')).documentElement);
+  return rows;
+}
+async function readPdf(file){
+  const base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  await loadScript(base+'pdf.min.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const rows=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const {items}=await (await pdf.getPage(p)).getTextContent();
+    const lines=[];
+    items.filter(i=>i.str.trim()).forEach(i=>{
+      const y=i.transform[5];
+      let l=lines.find(x=>Math.abs(x.y-y)<3);
+      if(!l){l={y,items:[]};lines.push(l);}
+      l.items.push(i);
+    });
+    lines.sort((a,b)=>b.y-a.y).forEach(l=>{
+      const cells=[];
+      let end=null;
+      l.items.sort((a,b)=>a.transform[4]-b.transform[4]).forEach(i=>{
+        const x=i.transform[4];
+        if(end===null||x-end>12)cells.push(i.str);
+        else cells[cells.length-1]+=(x-end>1?' ':'')+i.str;
+        end=x+i.width;
+      });
+      rows.push(cells);
+    });
+  }
+  return rows;
+}
+async function readCsv(file){
+  const text=await file.text();
+  const d=(text.match(/;/g)||[]).length>(text.match(/,/g)||[]).length?';':',';
+  return text.split(/\r?\n/).map(line=>{
+    const cells=[''];
+    let q=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){
+        if(q&&line[i+1]==='"'){cells[cells.length-1]+='"';i++;}
+        else q=!q;
+      }
+      else if(ch===d&&!q)cells.push('');
+      else cells[cells.length-1]+=ch;
+    }
+    return cells;
+  });
+}
+
+const RX_CRIT=/^(criterios?|variables?|indicador(es)?|[ií]tems?|aspectos?)\b/i;
+const RX_MAX=/^(m[aá]x|puntaje|peso|valor|ponderaci)/i;
+const RX_NOMAX=/obten|logr/i;
+
+function findField(rows,label){
+  const rx=new RegExp('^(?:'+label+')\\s*(?:$|[:\\-–]\\s*(.*)$)','i');
+  for(const r of rows){
+    for(let i=0;i<r.length;i++){
+      const m=r[i].match(rx);
+      if(!m)continue;
+      const v=m[1]||r.slice(i+1).find(Boolean)||'';
+      const clean=v.replace(/^[*•\-\s]+/,'').trim();
+      if(clean)return clean;
+    }
+  }
+  return '';
+}
+function parseMeta(rows){
+  const meta={};
+  const add=(k,v)=>{if(v)meta[k]=v;};
+  add('tema',findField(rows,'tema'));
+  add('nombre',findField(rows,'nombre\\s+de\\s+la\\s+(?:coevaluaci[oó]n|lista|evidencia)'));
+  add('programa',findField(rows,'programa(?:\\s+de\\s+formaci[oó]n)?'));
+  add('instructor',findField(rows,'instructor(?:\\(es\\)|es|a)?'));
+  add('competencia',findField(rows,'competencia'));
+  add('actividad',findField(rows,'actividad(?:es)?(?:\\s+de\\s+aprendizaje)?'));
+  // "Técnico en X (524704 V1)  No. Ficha: 3492240"
+  for(const r of rows){
+    for(const c of r){
+      const m=c.match(/^(.*?)\s*(?:N[o°º]\.?\s*(?:de\s*)?)?ficha\D{0,10}(\d{5,})/i);
+      if(!m)continue;
+      meta.ficha=meta.ficha||m[2];
+      const prog=m[1].replace(/\s*\([^)]*\)\s*$/,'').replace(/[\s\-–·:,]+$/,'').trim();
+      if(!meta.programa&&prog)meta.programa=prog;
+    }
+  }
+  const all=rows.map(r=>r.join(' ')).join(' \n ');
+  const min=all.match(/(?:m[ií]nimo|aprobar|aprobaci[oó]n|alcanzar)[^\d\n]{0,80}(\d{1,3})\s*%/i);
+  if(min&&+min[1]<=100)meta.minimo=+min[1];
+  return meta;
+}
+function parseCriteria(rows,loose){
+  const isHdr=r=>r.some(c=>c.length<=60&&RX_CRIT.test(c));
+  const hasMax=r=>r.some(c=>RX_MAX.test(c)&&!RX_NOMAX.test(c));
+  let h=rows.findIndex(r=>isHdr(r)&&hasMax(r));
+  if(h<0)h=rows.findIndex(r=>isHdr(r)&&r.filter(Boolean).length>1);
+  if(h<0)h=rows.findIndex(isHdr);
+  const hdr=h>=0?rows[h]:[];
+  const critCol=hdr.findIndex(c=>RX_CRIT.test(c));
+  const maxCol=hdr.findIndex(c=>RX_MAX.test(c)&&!RX_NOMAX.test(c));
+  const items=[],raw=[];
+  let pend='';
+  for(const r of rows.slice(h+1)){
+    if(r.some(c=>/^total\b/i.test(c))&&h>=0)break;
+    let idx=critCol>=0&&(r[critCol]||'').length>=4&&!loose?critCol:-1;
+    if(idx<0)r.forEach((c,i)=>{if(toNum(c)===null&&c.length>(idx<0?0:r[idx].length))idx=i;});
+    if(idx<0)continue;
+    let t=r[idx];
+    if(RX_CRIT.test(t)&&t.length<=60)continue;
+    let m=!loose&&maxCol>=0?toNum(r[maxCol]):null;
+    if(m===null)m=r.slice(idx+1).map(toNum).find(x=>x>0)??null;
+    if(m===null&&loose){
+      const tail=t.match(/^(.*\D)\s+(\d{1,3}(?:[.,]\d+)?)\s*(?:%|pts?|puntos)?$/);
+      if(tail){t=tail[1].trim();m=toNum(tail[2]);}
+    }
+    if(m!==null&&!(m>0&&m<=1000))m=null;
+    if(h<0&&(m===null||t.length<15))continue;
+    if(t.length<4)continue;
+    if(loose&&m===null){pend=(pend+' '+t).trim();raw.push(t);continue;}
+    items.push({t:loose?(pend+' '+t).trim():t,max:m});
+    pend='';
+  }
+  if(loose&&!items.length)raw.forEach(t=>items.push({t,max:null}));
+  const scored=items.filter(c=>c.max!==null);
+  if(scored.length)return {crit:scored,omitted:items.length-scored.length,noScores:false};
+  return {crit:items.map(c=>({t:c.t,max:1})),omitted:0,noScores:items.length>0};
+}
+function temaDeArchivo(name){
+  return name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ')
+    .replace(/lista\s+(de\s+)?cheque?o/i,'').replace(/\b\d{5,}\b/g,'').replace(/\s+/g,' ').trim();
+}
+async function loadChecklist(e){
+  const f=e.target.files[0];
+  if(!f)return;
+  const ext=f.name.split('.').pop().toLowerCase();
+  const readers={xlsx:readXlsx,docx:readDocx,pdf:readPdf,csv:readCsv};
+  admMsg('Leyendo '+f.name+'…');
+  try{
+    if(!readers[ext])throw new Error('Formato no admitido. Usa .xlsx, .docx, .pdf o .csv.');
+    const rows=(await readers[ext](f)).map(r=>Array.from(r,normTxt)).filter(r=>r.some(Boolean));
+    const res=parseCriteria(rows,ext==='pdf');
+    if(!res.crit.length)throw new Error('No se encontraron criterios en el documento. Agrégalos manualmente.');
+    const meta=parseMeta(rows);
+    const notes=[];
+    if(!meta.tema){
+      const t=temaDeArchivo(f.name);
+      if(t){meta.tema=t;notes.push('Tema tomado del nombre del archivo: revísalo.');}
+    }
+    if(!meta.nombre&&meta.tema)meta.nombre='Coevaluación · '+meta.tema;
+    const miss=[...CFG_TXT,'minimo'].filter(k=>meta[k]===undefined);
+    Object.keys(meta).forEach(k=>document.getElementById('a_'+k).value=meta[k]);
+    setCritRows(res.crit);
+    if(res.noScores)notes.push('El documento no trae puntajes: se asignó 1 a cada criterio, ajústalos.');
+    if(res.omitted)notes.push(`${res.omitted} fila(s) sin puntaje omitida(s).`);
+    if(miss.length)notes.push('No detectado, revisa: '+miss.join(', ')+'.');
+    const total=res.crit.reduce((a,c)=>a+c.max,0);
+    admMsg(`${res.crit.length} criterios leídos · total ${+total.toFixed(2)}. ${notes.join(' ')} Revisa y pulsa Guardar.`);
+  }catch(err){
+    admMsg(err.message||'No se pudo leer el documento.',true);
+  }
+  e.target.value='';
+}
+
 // ── PDF EXPORT ────────────────────────────────
 async function exportPDF(){
   const {jsPDF}=window.jspdf;
@@ -646,14 +1096,14 @@ async function exportPDF(){
   const dEval=document.getElementById('docEval').value||'—';
   const nEvad=document.getElementById('nomEvad').value||'—';
   const dEvad=document.getElementById('docEvad').value||'—';
-  const inst =document.getElementById('instructor').value||'Juan Viveros';
+  const inst =document.getElementById('instructor').value||'—';
   const fecha=document.getElementById('fechaField').value||'—';
   const ficha=document.getElementById('ficha').value||'—';
   const obs  =document.getElementById('obsGen').value;
   const tMax=CRIT.reduce((a,c)=>a+c.max,0);
   const tLog=scores.reduce((a,b)=>a+b,0);
   const pct=(tLog/tMax*100).toFixed(1);
-  const ok=parseFloat(pct)>=90;
+  const ok=tLog/tMax*100>=CFG.minimo;
 
   // ─ Header
   doc.setFillColor(0,80,70); doc.rect(0,0,W,26,'F');
@@ -662,7 +1112,7 @@ async function exportPDF(){
   doc.text('SERVICIO NACIONAL DE APRENDIZAJE – SENA',W/2,9,{align:'center'});
   doc.setFontSize(9);doc.setFont('helvetica','normal');
   doc.text('SENA REGIONAL TOLIMA · Centro de Industria y Construcción',W/2,15,{align:'center'});
-  doc.text('Lista de Chequeo Para Evaluar Evidencias de Producto · Adobe Audition',W/2,21,{align:'center'});
+  doc.text(doc.splitTextToSize('Lista de Chequeo Para Evaluar Evidencias de Producto · '+CFG.nombre,W-M*2)[0],W/2,21,{align:'center'});
   y=32;
 
   // ─ Datos
@@ -671,7 +1121,7 @@ async function exportPDF(){
     doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(0,120,100);
     doc.text(lbl,x,yy);
     doc.setFont('helvetica','normal');doc.setTextColor(20,40,35);doc.setFontSize(9);
-    doc.text(val,x,yy+5);
+    doc.text(doc.splitTextToSize(val,W/2-M-4)[0]||'',x,yy+5);
   };
   fld('Aprendiz Coevaluador:',nEval,M+2,y+2);
   fld('D.I.:',dEval,M+2,y+12);
@@ -680,6 +1130,7 @@ async function exportPDF(){
   fld('Instructor:',inst,M+2,y+22);
   fld('Fecha:',fecha,W/2+2,y+22);
   fld('Ficha:',ficha,M+2,y+32);
+  fld('Tema:',CFG.tema||'—',W/2+2,y+32);
   y+=44;
 
   // ─ Fotos
@@ -737,7 +1188,7 @@ async function exportPDF(){
   doc.rect(M,y,W-M*2,22,'S');
   doc.setFontSize(10);doc.setFont('helvetica','bold');
   doc.setTextColor(ok?0:170,ok?100:30,ok?80:30);
-  doc.text('JUICIO EVALUATIVO: '+(ok?'✓ CUMPLE':'✗ NO CUMPLE'),M+4,y+8);
+  doc.text('JUICIO EVALUATIVO: '+(ok?'CUMPLE':'NO CUMPLE')+` (${pct}% · mínimo ${CFG.minimo}%)`,M+4,y+8);
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
   doc.text(ok
     ?'El aprendiz cumple con los criterios establecidos para la aprobación de las actividades propuestas.'
@@ -771,10 +1222,10 @@ async function exportPDF(){
     doc.setPage(p);
     doc.setFillColor(0,80,70);doc.rect(0,290,W,7,'F');
     doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);
-    doc.text(`SENA Regional Tolima · Coevaluación Adobe Audition · Ficha 3172276 · Pág ${p}/${np}`,W/2,294.5,{align:'center'});
+    doc.text(`SENA Regional Tolima · ${CFG.nombre} · Ficha ${CFG.ficha} · Pág ${p}/${np}`,W/2,294.5,{align:'center'});
   }
 
-  const fn=`Coevaluacion_Audition_${(nEvad).replace(/ /g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+  const fn=`${(CFG.nombre+'_'+nEvad).replace(/[^\p{L}\p{N}]+/gu,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
   doc.save(fn);
 }
 </script>
